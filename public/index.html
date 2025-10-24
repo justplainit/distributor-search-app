@@ -43,6 +43,17 @@
                 </select>
                 <button id="refreshCustomersBtn" class="refresh-btn">🔄 Refresh Customers</button>
             </div>
+            
+            <div class="tarsus-upload" id="tarsusUpload">
+                <h3>📁 Tarsus XML Upload</h3>
+                <div class="upload-section">
+                    <input type="file" id="tarsusXmlFile" accept=".xml" style="display: none;">
+                    <button id="selectXmlBtn" class="select-file-btn">📁 Select XML File</button>
+                    <button id="uploadXmlBtn" class="upload-btn" disabled>⬆️ Upload XML</button>
+                    <div id="uploadStatus" class="upload-status"></div>
+                </div>
+                <div id="tarsusStatus" class="tarsus-status"></div>
+            </div>
         </div>
 
         <div id="results" class="results-section" style="display: none;">
@@ -347,6 +358,95 @@
 
         // Load customers when page loads
         loadCustomers();
+
+        // Tarsus XML Upload functionality
+        const tarsusXmlFile = document.getElementById('tarsusXmlFile');
+        const selectXmlBtn = document.getElementById('selectXmlBtn');
+        const uploadXmlBtn = document.getElementById('uploadXmlBtn');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const tarsusStatus = document.getElementById('tarsusStatus');
+
+        // Select XML file
+        selectXmlBtn.addEventListener('click', () => {
+            tarsusXmlFile.click();
+        });
+
+        // File selection
+        tarsusXmlFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                uploadXmlBtn.disabled = false;
+                uploadStatus.innerHTML = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            }
+        });
+
+        // Upload XML file
+        uploadXmlBtn.addEventListener('click', async () => {
+            const file = tarsusXmlFile.files[0];
+            if (!file) return;
+
+            try {
+                uploadXmlBtn.disabled = true;
+                uploadXmlBtn.textContent = 'Uploading...';
+                uploadStatus.innerHTML = 'Uploading XML file...';
+
+                const formData = new FormData();
+                formData.append('xmlFile', file);
+
+                const response = await fetch('/upload-tarsus-xml', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadStatus.innerHTML = `✅ ${result.message}`;
+                    checkTarsusStatus();
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                uploadStatus.innerHTML = `❌ Error: ${error.message}`;
+            } finally {
+                uploadXmlBtn.disabled = false;
+                uploadXmlBtn.textContent = '⬆️ Upload XML';
+            }
+        });
+
+        // Check Tarsus status
+        async function checkTarsusStatus() {
+            try {
+                const response = await fetch('/tarsus-status');
+                const data = await response.json();
+
+                if (data.uploaded) {
+                    tarsusStatus.innerHTML = `
+                        <div class="status-success">
+                            ✅ Tarsus XML loaded<br>
+                            📁 File: ${data.filename}<br>
+                            📊 Size: ${(data.size / 1024 / 1024).toFixed(2)} MB<br>
+                            🕒 Updated: ${new Date(data.lastModified).toLocaleString()}
+                        </div>
+                    `;
+                } else {
+                    tarsusStatus.innerHTML = `
+                        <div class="status-warning">
+                            ⚠️ No Tarsus XML file uploaded yet<br>
+                            Please upload the XML file from Tarsus portal
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error checking Tarsus status:', error);
+                tarsusStatus.innerHTML = `<div class="status-error">❌ Error checking status</div>`;
+            }
+        }
+
+        // Check Tarsus status on page load
+        checkTarsusStatus();
     </script>
 </body>
 </html>

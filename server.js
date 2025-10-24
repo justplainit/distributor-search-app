@@ -2,6 +2,9 @@ const express = require('express');
 const axios = require('axios');
 const { XMLParser } = require('fast-xml-parser');
 const cors = require('cors');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -10,6 +13,36 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Create uploads directory
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, 'tarsus-products.xml');
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/xml' || file.mimetype === 'application/xml' || file.originalname.endsWith('.xml')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only XML files are allowed'), false);
+    }
+  },
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  }
+});
 
 // Simple password protection (Vercel handles the rest)
 const basicAuth = (req, res, next) => {
@@ -210,38 +243,39 @@ const distributors = [
     }
   },
 
-  // Tarsus Integration - XML Feed
+  // Tarsus Integration - Manual XML File Upload
   {
     name: 'Tarsus',
     type: 'xml',
     getUrl: (query) => {
-      // Tarsus XML feed URL - update this with actual URL
-      return process.env.TARSUS_XML_FEED_URL || 'https://tarsus.com/feeds/products.xml';
+      // Tarsus uses manual XML file upload, not URL-based feeds
+      return 'manual-upload';
     },
     headers: () => {
-      // Add authentication if required
-      const headers = {};
-      if (process.env.TARSUS_USERNAME && process.env.TARSUS_PASSWORD) {
-        const auth = Buffer.from(`${process.env.TARSUS_USERNAME}:${process.env.TARSUS_PASSWORD}`).toString('base64');
-        headers['Authorization'] = `Basic ${auth}`;
-      }
-      return headers;
+      return {};
     },
     makeRequest: async (url, headers, query) => {
       try {
-        console.log(`🔍 Fetching Tarsus XML feed for: ${query}`);
+        console.log(`🔍 Searching Tarsus XML data for: ${query}`);
         
-        // Download the XML feed
-        const response = await axios.get(url, { 
-          headers,
-          timeout: 30000 // 30 second timeout for large XML files
-        });
+        // Check if Tarsus XML file exists
+        const fs = require('fs');
+        const path = require('path');
+        const xmlFilePath = path.join(__dirname, 'uploads', 'tarsus-products.xml');
         
-        console.log(`✅ Downloaded Tarsus XML feed (${response.data.length} characters)`);
-        return response;
+        if (!fs.existsSync(xmlFilePath)) {
+          console.log('⚠️ No Tarsus XML file uploaded yet');
+          return { data: '<products></products>' }; // Return empty XML
+        }
+        
+        // Read the uploaded XML file
+        const xmlData = fs.readFileSync(xmlFilePath, 'utf8');
+        console.log(`✅ Loaded Tarsus XML file (${xmlData.length} characters)`);
+        
+        return { data: xmlData };
         
       } catch (error) {
-        console.error(`❌ Error fetching Tarsus XML feed: ${error.message}`);
+        console.error(`❌ Error reading Tarsus XML file: ${error.message}`);
         throw error;
       }
     },
@@ -452,6 +486,56 @@ app.get('/xero/callback', async (req, res) => {
   } catch (error) {
     console.error('Xero OAuth error:', error.response?.data || error.message);
     res.status(500).send('Error connecting to Xero');
+  }
+});
+
+// Upload Tarsus XML file
+app.post('/upload-tarsus-xml', upload.single('xmlFile'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No XML file uploaded' });
+    }
+
+    console.log('✅ Tarsus XML file uploaded successfully');
+    res.json({
+      success: true,
+      message: 'Tarsus XML file uploaded successfully',
+      filename: req.file.filename,
+      size: req.file.size
+    });
+
+  } catch (error) {
+    console.error('Error uploading Tarsus XML:', error);
+    res.status(500).json({ error: 'Failed to upload XML file' });
+  }
+});
+
+// Get Tarsus XML file status
+app.get('/tarsus-status', (req, res) => {
+  try {
+    const xmlFilePath = path.join(uploadsDir, 'tarsus-products.xml');
+    const exists = fs.existsSync(xmlFilePath);
+    
+    if (exists) {
+      const stats = fs.statSync(xmlFilePath);
+      res.json({
+        success: true,
+        uploaded: true,
+        filename: 'tarsus-products.xml',
+        size: stats.size,
+        lastModified: stats.mtime
+      });
+    } else {
+      res.json({
+        success: true,
+        uploaded: false,
+        message: 'No Tarsus XML file uploaded yet'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error checking Tarsus XML status:', error);
+    res.status(500).json({ error: 'Failed to check XML file status' });
   }
 });
 
