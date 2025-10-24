@@ -1,0 +1,9 @@
+AXIZ_CLIENT_ID=JUSTPLAINITPTYLTD_SJJUS999
+AXIZ_CLIENT_SECRET=e946fe67-f288-4517-8a5f-82e6c0a16518
+AXIZ_SCOPE=axiz-api.customers axiz-api.erppricelist axiz-api.internalpricelist axiz-api.markets axiz-api.salesordertracking
+AXIZ_TOKEN_ENDPOINT=https://www.axizdigital.com/connect/token
+AXIZ_API_BASE_URL=https://api.goaxiz.co.za
+XERO_CLIENT_ID=7704F5EAEA0E46838B4D8BE14A1B78FC
+XERO_CLIENT_SECRET=VxytRmKXaD0A8-36ldoRwkYCG8jSgIULhIPzDZp13qvGQPdT
+XERO_REDIRECT_URI=https://distributor-search-app.vercel.app/xero/callback
+XERO_SCOPE=accounting.transactions accounting.settings

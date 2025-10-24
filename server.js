@@ -10,6 +10,31 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Simple password protection (Vercel handles the rest)
+const basicAuth = (req, res, next) => {
+  const auth = req.headers.authorization;
+  
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Distributor Search"');
+    return res.status(401).send('Authentication required');
+  }
+  
+  const credentials = Buffer.from(auth.slice(6), 'base64').toString();
+  const [username, password] = credentials.split(':');
+  
+  // Change these credentials!
+  if (username === 'admin' && password === 'Distributor2024!Secure') {
+    return next();
+  }
+  
+  res.setHeader('WWW-Authenticate', 'Basic realm="Distributor Search"');
+  return res.status(401).send('Invalid credentials');
+};
+
+// Apply password protection to all routes
+app.use(basicAuth);
+
 app.use(express.static('public'));
 
 // XML Parser instance
