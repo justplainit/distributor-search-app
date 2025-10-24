@@ -394,13 +394,56 @@ app.get('/xero/callback', async (req, res) => {
   }
 });
 
+// Get customers from Xero
+app.get('/xero/customers', async (req, res) => {
+  try {
+    const token = await getXeroAccessToken();
+    
+    // For demo purposes, return mock customers
+    // In production, you'd make the actual API call to Xero
+    const mockCustomers = [
+      {
+        ContactID: 'customer-1',
+        Name: 'ABC Company Ltd',
+        EmailAddress: 'contact@abccompany.com',
+        IsCustomer: true
+      },
+      {
+        ContactID: 'customer-2', 
+        Name: 'XYZ Corporation',
+        EmailAddress: 'info@xyzcorp.com',
+        IsCustomer: true
+      },
+      {
+        ContactID: 'customer-3',
+        Name: 'Tech Solutions Inc',
+        EmailAddress: 'sales@techsolutions.com',
+        IsCustomer: true
+      }
+    ];
+    
+    res.json({
+      success: true,
+      customers: mockCustomers
+    });
+
+  } catch (error) {
+    console.error('Error fetching Xero customers:', error);
+    res.status(500).json({ error: 'Failed to fetch customers from Xero' });
+  }
+});
+
 // Create quote in Xero
 app.post('/create-quote', async (req, res) => {
   try {
-    const { items } = req.body;
+    const { items, customer } = req.body;
     
     if (!items || items.length === 0) {
       return res.status(400).json({ error: 'No items provided' });
+    }
+
+    if (!customer) {
+      return res.status(400).json({ error: 'No customer provided' });
     }
 
     const token = await getXeroAccessToken();
@@ -409,8 +452,9 @@ app.post('/create-quote', async (req, res) => {
     const quoteData = {
       Type: 'ACCRECQUOTE',
       Contact: {
-        Name: 'Customer Name', // You can make this dynamic
-        EmailAddress: 'customer@example.com'
+        ContactID: customer.ContactID,
+        Name: customer.Name,
+        EmailAddress: customer.EmailAddress
       },
       Date: new Date().toISOString().split('T')[0],
       DueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
@@ -425,9 +469,15 @@ app.post('/create-quote', async (req, res) => {
       Status: 'DRAFT'
     };
 
-    // For demo purposes, return a mock response
+    // For demo purposes, return a mock response with Xero-style quote number
     // In production, you'd make the actual API call to Xero
-    console.log('📋 Creating quote in Xero with items:', items.length);
+    console.log('📋 Creating quote in Xero for customer:', customer.Name);
+    console.log('📋 Items:', items.length);
+    
+    // Generate Xero-style quote number (QU-YYYY-NNNNNN format)
+    const year = new Date().getFullYear();
+    const quoteNumber = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
+    const xeroQuoteNumber = `QU-${year}-${quoteNumber}`;
     
     const mockQuoteId = 'QUOTE-' + Date.now();
     const mockQuoteUrl = `https://go.xero.com/organisationlogin/default.aspx?shortcode=${mockQuoteId}`;
@@ -435,7 +485,9 @@ app.post('/create-quote', async (req, res) => {
     res.json({
       success: true,
       quoteId: mockQuoteId,
+      quoteNumber: xeroQuoteNumber,
       quoteUrl: mockQuoteUrl,
+      customer: customer.Name,
       message: 'Quote created successfully in Xero'
     });
 

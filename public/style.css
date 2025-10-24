@@ -125,6 +125,53 @@ header p {
     font-weight: 500;
 }
 
+/* Customer Selection */
+.customer-selection {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.customer-selection h3 {
+    margin: 0 0 15px 0;
+    color: #28a745;
+    font-size: 1.1rem;
+}
+
+.customer-dropdown {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+    margin-bottom: 10px;
+    transition: border-color 0.2s ease;
+}
+
+.customer-dropdown:focus {
+    outline: none;
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.refresh-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: #5a6268;
+}
+
 /* Results section */
 .results-section {
     background: white;

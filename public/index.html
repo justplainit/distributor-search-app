@@ -35,6 +35,14 @@
                 </a>
                 <span class="connection-status" id="xeroStatus">Not connected</span>
             </div>
+            
+            <div class="customer-selection" id="customerSelection" style="display: none;">
+                <h3>Select Customer for Quote</h3>
+                <select id="customerSelect" class="customer-dropdown">
+                    <option value="">Loading customers...</option>
+                </select>
+                <button id="refreshCustomersBtn" class="refresh-btn">🔄 Refresh Customers</button>
+            </div>
         </div>
 
         <div id="results" class="results-section" style="display: none;">
@@ -99,8 +107,10 @@
         const clearSelectionBtn = document.getElementById('clearSelectionBtn');
         const selectAllCheckbox = document.getElementById('selectAll');
         
-        // Store selected items
+        // Store selected items and customer data
         let selectedItemsData = [];
+        let customers = [];
+        let selectedCustomer = null;
 
         searchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -214,7 +224,8 @@
             
             if (selectedItemsData.length > 0) {
                 selectedItems.style.display = 'block';
-                createQuoteBtn.disabled = false;
+                document.getElementById('customerSelection').style.display = 'block';
+                updateCreateQuoteButton();
                 
                 selectedItemsList.innerHTML = selectedItemsData.map(item => `
                     <div class="selected-item">
@@ -224,7 +235,8 @@
                 `).join('');
             } else {
                 selectedItems.style.display = 'none';
-                createQuoteBtn.disabled = true;
+                document.getElementById('customerSelection').style.display = 'none';
+                updateCreateQuoteButton();
             }
         }
 
@@ -239,9 +251,67 @@
             updateSelectedItemsDisplay();
         });
 
+        // Load customers from Xero
+        async function loadCustomers() {
+            try {
+                const response = await fetch('/xero/customers');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    customers = data.customers || [];
+                    populateCustomerDropdown();
+                } else {
+                    console.error('Failed to load customers:', data.error);
+                    document.getElementById('customerSelect').innerHTML = '<option value="">Error loading customers</option>';
+                }
+            } catch (error) {
+                console.error('Error loading customers:', error);
+                document.getElementById('customerSelect').innerHTML = '<option value="">Error loading customers</option>';
+            }
+        }
+
+        // Populate customer dropdown
+        function populateCustomerDropdown() {
+            const select = document.getElementById('customerSelect');
+            select.innerHTML = '<option value="">Select a customer...</option>';
+            
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.ContactID;
+                option.textContent = `${customer.Name} (${customer.EmailAddress || 'No email'})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Customer selection change
+        document.getElementById('customerSelect').addEventListener('change', (e) => {
+            selectedCustomer = customers.find(c => c.ContactID === e.target.value);
+            updateCreateQuoteButton();
+        });
+
+        // Refresh customers button
+        document.getElementById('refreshCustomersBtn').addEventListener('click', () => {
+            loadCustomers();
+        });
+
+        // Update create quote button state
+        function updateCreateQuoteButton() {
+            const hasItems = selectedItemsData.length > 0;
+            const hasCustomer = selectedCustomer !== null;
+            createQuoteBtn.disabled = !hasItems || !hasCustomer;
+            
+            if (!hasCustomer && hasItems) {
+                createQuoteBtn.textContent = '📋 Select Customer First';
+            } else if (!hasItems) {
+                createQuoteBtn.textContent = '📋 Create Quote in Xero';
+            } else {
+                createQuoteBtn.textContent = `📋 Create Quote for ${selectedCustomer?.Name}`;
+            }
+        }
+
         // Create quote in Xero
         createQuoteBtn.addEventListener('click', async () => {
-            if (selectedItemsData.length === 0) return;
+            if (selectedItemsData.length === 0 || !selectedCustomer) return;
             
             try {
                 createQuoteBtn.disabled = true;
@@ -253,14 +323,15 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        items: selectedItemsData
+                        items: selectedItemsData,
+                        customer: selectedCustomer
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok) {
-                    alert(`✅ Quote created successfully in Xero!\nQuote ID: ${result.quoteId}\nView: ${result.quoteUrl}`);
+                    alert(`✅ Quote created successfully in Xero!\nQuote Number: ${result.quoteNumber}\nCustomer: ${selectedCustomer.Name}\nView: ${result.quoteUrl}`);
                 } else {
                     throw new Error(result.error || 'Failed to create quote');
                 }
@@ -270,9 +341,12 @@
                 alert(`❌ Error creating quote: ${error.message}`);
             } finally {
                 createQuoteBtn.disabled = false;
-                createQuoteBtn.textContent = '📋 Create Quote in Xero';
+                updateCreateQuoteButton();
             }
         });
+
+        // Load customers when page loads
+        loadCustomers();
     </script>
 </body>
 </html>
