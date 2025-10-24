@@ -210,17 +210,78 @@ const distributors = [
     }
   },
 
-  // Add more distributors here following the same pattern:
-  // {
-  //   name: 'Distributor B',
-  //   type: 'json', // or 'xml'
-  //   getUrl: (query) => `https://api.distributor-b.com/search?q=${encodeURIComponent(query)}`,
-  //   headers: { /* optional headers */ },
-  //   map: (response) => {
-  //     // Transform response to standard format
-  //     return transformedData;
-  //   }
-  // }
+  // Tarsus Integration - XML Feed
+  {
+    name: 'Tarsus',
+    type: 'xml',
+    getUrl: (query) => {
+      // Tarsus XML feed URL - update this with actual URL
+      return process.env.TARSUS_XML_FEED_URL || 'https://tarsus.com/feeds/products.xml';
+    },
+    headers: () => {
+      // Add authentication if required
+      const headers = {};
+      if (process.env.TARSUS_USERNAME && process.env.TARSUS_PASSWORD) {
+        const auth = Buffer.from(`${process.env.TARSUS_USERNAME}:${process.env.TARSUS_PASSWORD}`).toString('base64');
+        headers['Authorization'] = `Basic ${auth}`;
+      }
+      return headers;
+    },
+    makeRequest: async (url, headers, query) => {
+      try {
+        console.log(`🔍 Fetching Tarsus XML feed for: ${query}`);
+        
+        // Download the XML feed
+        const response = await axios.get(url, { 
+          headers,
+          timeout: 30000 // 30 second timeout for large XML files
+        });
+        
+        console.log(`✅ Downloaded Tarsus XML feed (${response.data.length} characters)`);
+        return response;
+        
+      } catch (error) {
+        console.error(`❌ Error fetching Tarsus XML feed: ${error.message}`);
+        throw error;
+      }
+    },
+    map: (response) => {
+      try {
+        console.log('🔍 Parsing Tarsus XML feed...');
+        
+        // Parse XML response
+        const xmlData = xmlParser.parse(response.data);
+        
+        // Extract products from XML structure
+        // Note: This structure will need to be adjusted based on actual Tarsus XML format
+        let products = [];
+        
+        if (xmlData.products && xmlData.products.product) {
+          products = Array.isArray(xmlData.products.product) 
+            ? xmlData.products.product 
+            : [xmlData.products.product];
+        } else if (xmlData.product) {
+          products = Array.isArray(xmlData.product) 
+            ? xmlData.product 
+            : [xmlData.product];
+        }
+        
+        return products.map(product => ({
+          distributor: 'Tarsus',
+          sku: product.sku || product.code || product.id || 'N/A',
+          price: product.price ? `R${parseFloat(product.price).toFixed(2)}` : 'N/A',
+          stock: product.stock || product.quantity || product.available || 'N/A',
+          name: product.name || product.title || product.description || 'N/A',
+          brand: product.brand || product.manufacturer || 'N/A',
+          description: product.description || product.longDescription || product.summary || 'N/A'
+        }));
+        
+      } catch (error) {
+        console.error('❌ Error parsing Tarsus XML:', error.message);
+        return [];
+      }
+    }
+  }
 
   // Add more distributors here following the same pattern:
   // {
