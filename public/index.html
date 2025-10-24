@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributor Search</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Distributor Search</h1>
+            <p>Search for models and SKUs across multiple distributors</p>
+        </header>
+
+        <div class="search-section">
+            <form id="searchForm">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Enter model or SKU..." 
+                        required
+                    >
+                    <button type="submit" id="searchBtn">
+                        <span class="btn-text">Search</span>
+                        <span class="btn-loading" style="display: none;">Searching...</span>
+                    </button>
+                </div>
+            </form>
+            
+            <div class="xero-connection">
+                <a href="/xero/auth" class="connect-xero-btn">
+                    🔗 Connect to Xero
+                </a>
+                <span class="connection-status" id="xeroStatus">Not connected</span>
+            </div>
+        </div>
+
+        <div id="results" class="results-section" style="display: none;">
+            <h2>Search Results</h2>
+            <div id="resultsInfo" class="results-info"></div>
+            <div class="table-container">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" title="Select All"></th>
+                            <th>Distributor</th>
+                            <th>SKU</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Selected Items and Quote Creation -->
+            <div id="selectedItems" class="selected-items-section" style="display: none;">
+                <h3>Selected Items (<span id="selectedCount">0</span>)</h3>
+                <div id="selectedItemsList" class="selected-items-list"></div>
+                <div class="quote-actions">
+                    <button id="createQuoteBtn" class="create-quote-btn" disabled>
+                        📋 Create Quote in Xero
+                    </button>
+                    <button id="clearSelectionBtn" class="clear-selection-btn">
+                        🗑️ Clear Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="error" class="error-section" style="display: none;">
+            <h2>Error</h2>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const btnText = document.querySelector('.btn-text');
+        const btnLoading = document.querySelector('.btn-loading');
+        const resultsSection = document.getElementById('results');
+        const errorSection = document.getElementById('error');
+        const resultsInfo = document.getElementById('resultsInfo');
+        const resultsTable = document.getElementById('resultsTable');
+        const resultsBody = document.getElementById('resultsBody');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Quote creation elements
+        const selectedItems = document.getElementById('selectedItems');
+        const selectedCount = document.getElementById('selectedCount');
+        const selectedItemsList = document.getElementById('selectedItemsList');
+        const createQuoteBtn = document.getElementById('createQuoteBtn');
+        const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        
+        // Store selected items
+        let selectedItemsData = [];
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const query = searchInput.value.trim();
+            if (!query) return;
+
+            // Show loading state
+            searchBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline';
+            resultsSection.style.display = 'none';
+            errorSection.style.display = 'none';
+
+            try {
+                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Search failed');
+                }
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Search error:', error);
+                showError(error.message);
+            } finally {
+                // Reset button state
+                searchBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        });
+
+        function displayResults(data) {
+            resultsInfo.innerHTML = `
+                <p>Found <strong>${data.totalResults}</strong> results for "<strong>${data.query}</strong>"</p>
+                ${data.errors ? `<p class="errors">⚠️ Some distributors had errors: ${data.errors.join(', ')}</p>` : ''}
+            `;
+
+            // Clear previous results
+            resultsBody.innerHTML = '';
+
+            if (data.results.length === 0) {
+                resultsBody.innerHTML = '<tr><td colspan="6" class="no-results">No results found</td></tr>';
+            } else {
+                data.results.forEach((result, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><input type="checkbox" class="item-checkbox" data-index="${index}"></td>
+                        <td class="distributor">${result.distributor}</td>
+                        <td class="sku">${result.sku}</td>
+                        <td class="price">${result.price}</td>
+                        <td class="stock">${result.stock}</td>
+                        <td class="description">${result.description}</td>
+                    `;
+                    resultsBody.appendChild(row);
+                });
+                
+                // Add event listeners for checkboxes
+                addCheckboxListeners(data.results);
+            }
+
+            resultsSection.style.display = 'block';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorSection.style.display = 'block';
+        }
+
+        // Add checkbox event listeners
+        function addCheckboxListeners(results) {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            
+            checkboxes.forEach((checkbox, index) => {
+                checkbox.addEventListener('change', () => {
+                    updateSelectedItems(results);
+                });
+            });
+            
+            // Select all functionality
+            selectAllCheckbox.addEventListener('change', () => {
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateSelectedItems(results);
+            });
+        }
+
+        // Update selected items
+        function updateSelectedItems(results) {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            selectedItemsData = [];
+            
+            checkboxes.forEach((checkbox, index) => {
+                if (checkbox.checked) {
+                    selectedItemsData.push(results[index]);
+                }
+            });
+            
+            updateSelectedItemsDisplay();
+        }
+
+        // Update selected items display
+        function updateSelectedItemsDisplay() {
+            selectedCount.textContent = selectedItemsData.length;
+            
+            if (selectedItemsData.length > 0) {
+                selectedItems.style.display = 'block';
+                createQuoteBtn.disabled = false;
+                
+                selectedItemsList.innerHTML = selectedItemsData.map(item => `
+                    <div class="selected-item">
+                        <strong>${item.sku}</strong> - ${item.distributor} - ${item.price}
+                        <span class="item-description">${item.description}</span>
+                    </div>
+                `).join('');
+            } else {
+                selectedItems.style.display = 'none';
+                createQuoteBtn.disabled = true;
+            }
+        }
+
+        // Clear selection
+        clearSelectionBtn.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            selectAllCheckbox.checked = false;
+            selectedItemsData = [];
+            updateSelectedItemsDisplay();
+        });
+
+        // Create quote in Xero
+        createQuoteBtn.addEventListener('click', async () => {
+            if (selectedItemsData.length === 0) return;
+            
+            try {
+                createQuoteBtn.disabled = true;
+                createQuoteBtn.textContent = 'Creating Quote...';
+                
+                const response = await fetch('/create-quote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        items: selectedItemsData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ Quote created successfully in Xero!\nQuote ID: ${result.quoteId}\nView: ${result.quoteUrl}`);
+                } else {
+                    throw new Error(result.error || 'Failed to create quote');
+                }
+                
+            } catch (error) {
+                console.error('Quote creation error:', error);
+                alert(`❌ Error creating quote: ${error.message}`);
+            } finally {
+                createQuoteBtn.disabled = false;
+                createQuoteBtn.textContent = '📋 Create Quote in Xero';
+            }
+        });
+    </script>
+</body>
+</html>
