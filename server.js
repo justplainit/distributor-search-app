@@ -14,10 +14,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Create uploads directory
-const uploadsDir = path.join(__dirname, 'uploads');
+// Use temp directory for serverless compatibility
+const os = require('os');
+const uploadsDir = path.join(os.tmpdir(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (error) {
+    console.log('Warning: Could not create uploads directory:', error.message);
+  }
 }
 
 // Configure multer for file uploads
