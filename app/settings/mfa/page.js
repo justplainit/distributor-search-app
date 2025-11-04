@@ -124,7 +124,7 @@ export default function MFASetupPage() {
                 
                 {qrCode && (
                   <div className="flex justify-center mb-4">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* eslint-disable @next/next/no-img-element */}
                     <img 
                       src={qrCode} 
                       alt="MFA QR Code" 

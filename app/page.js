@@ -94,7 +94,8 @@ export default function Home() {
     if (isAuthenticated && !checkingAuth) {
       searchProducts(true)
     }
-  }, [isAuthenticated, checkingAuth, searchProducts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, checkingAuth])
 
   // Auto-search when filters change (debounced for query)
   useEffect(() => {
@@ -118,7 +119,8 @@ export default function Home() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [filters, searchProducts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
 
   // Check authentication on mount
   useEffect(() => {
