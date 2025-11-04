@@ -141,9 +141,16 @@ export async function GET(request) {
     // Dev mode: Search in-memory (no authentication required)
     if (DEV_MODE) {
       // Load products if not already loaded
-      if (!devProductsLoaded) {
+      // Note: On Vercel serverless, state may reset between requests
+      // So we may need to reload products on each cold start
+      if (!devProductsLoaded || devProducts.length === 0) {
         console.log('📦 Loading products from suppliers...');
         try {
+          // Reset state to allow reloading if needed
+          if (devProducts.length === 0) {
+            devProductsLoaded = false;
+            devProducts = [];
+          }
           await loadDevProducts();
         } catch (error) {
           console.error('❌ Error loading products:', error);
@@ -154,6 +161,9 @@ export async function GET(request) {
             limit,
             offset,
             error: 'Failed to load products. Please try again.',
+            debug: {
+              message: error.message,
+            },
           });
         }
       }
