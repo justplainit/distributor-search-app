@@ -9,6 +9,17 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) DEFAULT 'user', -- 'admin' or 'user'
     oauth_provider VARCHAR(50), -- 'microsoft', 'google', etc.
     oauth_id VARCHAR(255),
+    -- MFA fields
+    mfa_secret VARCHAR(255), -- Google Authenticator secret
+    mfa_enabled BOOLEAN DEFAULT FALSE,
+    -- Email verification
+    email_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255),
+    verification_token_expires_at TIMESTAMP,
+    -- Account security
+    failed_login_attempts INTEGER DEFAULT 0,
+    locked_until TIMESTAMP,
+    last_login_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

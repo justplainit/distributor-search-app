@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [mfaToken, setMfaToken] = useState('')
+  const [requiresMfa, setRequiresMfa] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -20,17 +23,32 @@ export default function LoginPage() {
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, mfaToken: requiresMfa ? mfaToken : undefined }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        router.push('/')
+        // Check if MFA is required
+        if (data.requiresMfa && !requiresMfa) {
+          setRequiresMfa(true)
+          setLoading(false)
+          return
+        }
+
+        // Login successful
+        if (data.token) {
+          localStorage.setItem('token', data.token)
+          localStorage.setItem('user', JSON.stringify(data.user))
+          router.push('/')
+        }
       } else {
         setError(data.error || 'Login failed')
+        // Reset MFA if login fails
+        if (requiresMfa && data.error) {
+          setRequiresMfa(false)
+          setMfaToken('')
+        }
       }
     } catch (error) {
       setError('Connection error. Please try again.')
@@ -57,38 +75,77 @@ export default function LoginPage() {
             </div>
           )}
           <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+            {!requiresMfa ? (
+              <>
+                <div>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm disabled:bg-gray-100"
+                    placeholder="Email address"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm disabled:bg-gray-100"
+                    placeholder="Password"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Enter the 6-digit code from your authenticator app:</p>
+                <input
+                  type="text"
+                  required
+                  value={mfaToken}
+                  onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  disabled={loading}
+                  maxLength={6}
+                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm text-center text-2xl tracking-widest disabled:bg-gray-100"
+                  placeholder="000000"
+                />
+              </div>
+            )}
           </div>
 
           <div>
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Signing in...' : requiresMfa ? 'Verify Code' : 'Sign in'}
             </button>
           </div>
+
+          {requiresMfa && (
+            <button
+              type="button"
+              onClick={() => {
+                setRequiresMfa(false)
+                setMfaToken('')
+              }}
+              className="w-full text-sm text-gray-600 hover:text-gray-800"
+            >
+              Back to password
+            </button>
+          )}
         </form>
+
+        <div className="text-center mt-4">
+          <Link href="/register" className="text-sm text-blue-600 hover:text-blue-500">
+            Don't have an account? Create one
+          </Link>
+        </div>
       </div>
     </div>
   )
