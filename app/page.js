@@ -29,24 +29,10 @@ export default function Home() {
     try {
       let token = localStorage.getItem('token')
       
-      // Auto-login in dev mode if no token
+      // Require authentication - redirect if no token
       if (!token) {
-        try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-          const loginResponse = await fetch(`${apiUrl}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'dev@test.com', password: 'dev' }),
-          })
-          
-          if (loginResponse.ok) {
-            const loginData = await loginResponse.json()
-            token = loginData.token
-            localStorage.setItem('token', token)
-          }
-        } catch (e) {
-          console.log('Auto-login failed:', e)
-        }
+        router.push('/login')
+        return
       }
       
       const params = new URLSearchParams()
@@ -134,34 +120,35 @@ export default function Home() {
     }
   }, [filters])
 
-  // Load initial products on mount
+  // Check authentication on mount
   useEffect(() => {
-    // Auto-login on mount (dev mode)
-    const autoLogin = async () => {
-      let token = localStorage.getItem('token')
-      if (!token) {
-        try {
-          const loginResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'dev@test.com', password: 'dev' }),
-          })
-          
-          if (loginResponse.ok) {
-            const loginData = await loginResponse.json()
-            localStorage.setItem('token', loginData.token)
-          }
-        } catch (e) {
-          console.log('Auto-login failed:', e)
-        }
+    const checkAuth = () => {
+      const token = localStorage.getItem('token')
+      const user = localStorage.getItem('user')
+      
+      if (!token || !user) {
+        router.push('/login')
+        return
       }
       
-      // Load initial products (no query, just show first 200)
-      searchProducts(true)
+      setIsAuthenticated(true)
+      setCheckingAuth(false)
     }
     
-    autoLogin()
-  }, []) // Only run once on mount
+    checkAuth()
+  }, [router])
+
+  // Don't render content until auth is checked
+  if (checkingAuth || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   useEffect(() => {
     // Save filters to localStorage
