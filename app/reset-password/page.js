@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -12,13 +15,17 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const [token, setToken] = useState(null)
 
   useEffect(() => {
-    if (!token) {
+    // Get token from URL params
+    const urlToken = searchParams.get('token')
+    if (!urlToken) {
       router.push('/login')
+    } else {
+      setToken(urlToken)
     }
-  }, [token, router])
+  }, [searchParams, router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -63,7 +70,14 @@ export default function ResetPasswordPage() {
   }
 
   if (!token) {
-    return null
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
