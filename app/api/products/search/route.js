@@ -22,14 +22,26 @@ async function loadDevProducts() {
   devProductsLoaded = true;
 
   try {
-    const path = require('path');
-    const connectorsPath = path.join(process.cwd(), 'connectors');
-    console.log('📁 Connectors path:', connectorsPath);
+    // Try different require paths for Vercel compatibility
+    let MustekConnector, AxizConnector, TarsusConnector;
+    
+    try {
+      // Try relative path from project root (works in Vercel)
+      MustekConnector = require('../../../../connectors/MustekConnector');
+    } catch (e1) {
+      try {
+        // Try absolute path
+        const path = require('path');
+        MustekConnector = require(path.join(process.cwd(), 'connectors', 'MustekConnector'));
+      } catch (e2) {
+        // Try from connectors folder
+        MustekConnector = require('../../../connectors/MustekConnector');
+      }
+    }
     
     // Load Mustek products
     try {
       console.log('🔄 Loading Mustek products...');
-      const MustekConnector = require(path.join(connectorsPath, 'MustekConnector'));
       const mustekConfig = {
         name: 'Mustek',
         slug: 'mustek',
@@ -54,10 +66,20 @@ async function loadDevProducts() {
       console.error('Mustek error stack:', error.stack);
     }
     
+    try {
+      AxizConnector = require('../../../../connectors/AxizConnector');
+    } catch (e1) {
+      try {
+        const path = require('path');
+        AxizConnector = require(path.join(process.cwd(), 'connectors', 'AxizConnector'));
+      } catch (e2) {
+        AxizConnector = require('../../../connectors/AxizConnector');
+      }
+    }
+    
     // Load Axiz products
     try {
       console.log('🔄 Loading Axiz products...');
-      const AxizConnector = require(path.join(connectorsPath, 'AxizConnector'));
       const axizConfig = {
         name: 'Axiz',
         slug: 'axiz',
@@ -86,10 +108,20 @@ async function loadDevProducts() {
       console.error('Axiz error stack:', error.stack);
     }
     
+    try {
+      TarsusConnector = require('../../../../connectors/TarsusConnector');
+    } catch (e1) {
+      try {
+        const path = require('path');
+        TarsusConnector = require(path.join(process.cwd(), 'connectors', 'TarsusConnector'));
+      } catch (e2) {
+        TarsusConnector = require('../../../connectors/TarsusConnector');
+      }
+    }
+    
     // Load Tarsus products
     try {
       console.log('🔄 Loading Tarsus products...');
-      const TarsusConnector = require(path.join(connectorsPath, 'TarsusConnector'));
       const tarsusConfig = {
         name: 'Tarsus',
         slug: 'tarsus',
