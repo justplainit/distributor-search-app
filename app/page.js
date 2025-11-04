@@ -67,19 +67,33 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error('Search failed:', errorData)
-        setProducts([])
-        setTotal(0)
+        console.error('Search failed:', response.status, errorData)
+        // Still set products if they exist in error response
+        if (errorData.products) {
+          setProducts(errorData.products || [])
+          setTotal(errorData.total || 0)
+        } else {
+          setProducts([])
+          setTotal(0)
+        }
         return
       }
 
       const data = await response.json()
+      console.log('Search response:', { productsCount: data.products?.length || 0, total: data.total })
       setProducts(data.products || [])
       setTotal(data.total || 0)
     } catch (error) {
       console.error('Search error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      })
       setProducts([])
       setTotal(0)
+      // Show error to user
+      alert(`Search error: ${error.message || 'Please check console for details'}`)
     } finally {
       if (showLoading) setLoading(false)
     }

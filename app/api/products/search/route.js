@@ -103,11 +103,14 @@ async function loadDevProducts() {
       console.error('⚠️ Could not load Tarsus products:', error.message);
     }
     
-    console.log(`✅ Total ${devProducts.length} products loaded`);
+    console.log(`✅ Total ${devProducts.length} products loaded successfully`);
   } catch (error) {
-    console.error('⚠️ Error loading products:', error.message);
+    console.error('❌ Error loading products:', error.message);
+    console.error('Error stack:', error.stack);
     // If there's an error, mark as loaded to prevent infinite retries
     devProductsLoaded = true;
+    // Return empty array instead of throwing
+    return [];
   }
   
   return devProducts;
@@ -115,6 +118,10 @@ async function loadDevProducts() {
 
 export async function GET(request) {
   try {
+    console.log('🔍 Search API called');
+    console.log('DEV_MODE:', DEV_MODE);
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'set' : 'not set');
+    
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q');
     const supplier = searchParams.get('supplier');
@@ -125,14 +132,29 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
+    console.log('Search params:', { q, supplier, category, minPrice, maxPrice, stockStatus });
+
     // Dev mode: Search in-memory (no authentication required)
     if (DEV_MODE) {
       // Load products if not already loaded
       if (!devProductsLoaded) {
         console.log('📦 Loading products from suppliers...');
-        await loadDevProducts();
+        try {
+          await loadDevProducts();
+        } catch (error) {
+          console.error('❌ Error loading products:', error);
+          // Return empty results instead of failing
+          return NextResponse.json({
+            products: [],
+            total: 0,
+            limit,
+            offset,
+            error: 'Failed to load products. Please try again.',
+          });
+        }
       }
       
+      console.log(`📊 Total products in memory: ${devProducts.length}`);
       let filtered = [...devProducts];
       
       if (q) {
@@ -186,6 +208,8 @@ export async function GET(request) {
       });
       
       const paginated = filtered.slice(offset, offset + limit);
+      
+      console.log(`✅ Returning ${paginated.length} products (total: ${total})`);
       
       return NextResponse.json({
         products: paginated,
@@ -267,8 +291,14 @@ export async function GET(request) {
       offset,
     });
   } catch (error) {
-    console.error('Search error:', error);
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+    console.error('❌ Search error:', error);
+    console.error('Error stack:', error.stack);
+    return NextResponse.json({ 
+      error: 'Search failed',
+      message: error.message,
+      products: [],
+      total: 0,
+    }, { status: 500 });
   }
 }
 
