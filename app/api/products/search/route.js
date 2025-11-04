@@ -22,11 +22,14 @@ async function loadDevProducts() {
   devProductsLoaded = true;
 
   try {
+    const path = require('path');
+    const connectorsPath = path.join(process.cwd(), 'connectors');
+    console.log('📁 Connectors path:', connectorsPath);
+    
     // Load Mustek products
     try {
       console.log('🔄 Loading Mustek products...');
-      const path = require('path');
-      const MustekConnector = require(path.join(process.cwd(), 'connectors', 'MustekConnector'));
+      const MustekConnector = require(path.join(connectorsPath, 'MustekConnector'));
       const mustekConfig = {
         name: 'Mustek',
         slug: 'mustek',
@@ -54,7 +57,7 @@ async function loadDevProducts() {
     // Load Axiz products
     try {
       console.log('🔄 Loading Axiz products...');
-      const AxizConnector = require(path.join(process.cwd(), 'connectors', 'AxizConnector'));
+      const AxizConnector = require(path.join(connectorsPath, 'AxizConnector'));
       const axizConfig = {
         name: 'Axiz',
         slug: 'axiz',
@@ -86,7 +89,7 @@ async function loadDevProducts() {
     // Load Tarsus products
     try {
       console.log('🔄 Loading Tarsus products...');
-      const TarsusConnector = require(path.join(process.cwd(), 'connectors', 'TarsusConnector'));
+      const TarsusConnector = require(path.join(connectorsPath, 'TarsusConnector'));
       const tarsusConfig = {
         name: 'Tarsus',
         slug: 'tarsus',
