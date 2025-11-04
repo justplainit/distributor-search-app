@@ -24,6 +24,7 @@ async function loadDevProducts() {
   try {
     // Load Mustek products
     try {
+      console.log('🔄 Loading Mustek products...');
       const path = require('path');
       const MustekConnector = require(path.join(process.cwd(), 'connectors', 'MustekConnector'));
       const mustekConfig = {
@@ -47,10 +48,12 @@ async function loadDevProducts() {
       console.log(`✅ Loaded ${mustekProducts.length} Mustek products`);
     } catch (error) {
       console.error('⚠️ Could not load Mustek products:', error.message);
+      console.error('Mustek error stack:', error.stack);
     }
     
     // Load Axiz products
     try {
+      console.log('🔄 Loading Axiz products...');
       const AxizConnector = require(path.join(process.cwd(), 'connectors', 'AxizConnector'));
       const axizConfig = {
         name: 'Axiz',
@@ -77,10 +80,12 @@ async function loadDevProducts() {
       console.log(`✅ Loaded ${axizProducts.length} Axiz products`);
     } catch (error) {
       console.error('⚠️ Could not load Axiz products:', error.message);
+      console.error('Axiz error stack:', error.stack);
     }
     
     // Load Tarsus products
     try {
+      console.log('🔄 Loading Tarsus products...');
       const TarsusConnector = require(path.join(process.cwd(), 'connectors', 'TarsusConnector'));
       const tarsusConfig = {
         name: 'Tarsus',
@@ -105,6 +110,7 @@ async function loadDevProducts() {
       console.log(`✅ Loaded ${tarsusProducts.length} Tarsus products`);
     } catch (error) {
       console.error('⚠️ Could not load Tarsus products:', error.message);
+      console.error('Tarsus error stack:', error.stack);
     }
     
     console.log(`✅ Total ${devProducts.length} products loaded successfully`);
