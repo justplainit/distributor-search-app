@@ -94,7 +94,7 @@ export default function Home() {
     if (isAuthenticated && !checkingAuth) {
       searchProducts(true)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, checkingAuth, searchProducts])
 
   // Auto-search when filters change (debounced for query)
   useEffect(() => {
@@ -118,7 +118,7 @@ export default function Home() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [filters])
+  }, [filters, searchProducts])
 
   // Check authentication on mount
   useEffect(() => {
