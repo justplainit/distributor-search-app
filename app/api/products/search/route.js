@@ -12,8 +12,12 @@ const DEV_MODE = process.env.DEV_MODE === 'true' || !process.env.DATABASE_URL;
 
 // Load products from suppliers (dev mode)
 async function loadDevProducts() {
-  if (devProductsLoaded) return devProducts;
+  if (devProductsLoaded) {
+    console.log('📦 Products already loaded, returning cached products');
+    return devProducts;
+  }
   
+  console.log('📦 Starting to load products from suppliers...');
   devProducts = [];
   devProductsLoaded = true;
 
