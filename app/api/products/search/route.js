@@ -103,12 +103,12 @@ async function loadDevProducts() {
       console.error('⚠️ Could not load Tarsus products:', error.message);
     }
     
-      console.log(`✅ Total ${devProducts.length} products loaded`);
-    } catch (error) {
-      console.error('⚠️ Error loading products:', error.message);
-      // If there's an error, mark as loaded to prevent infinite retries
-      devProductsLoaded = true;
-    }
+    console.log(`✅ Total ${devProducts.length} products loaded`);
+  } catch (error) {
+    console.error('⚠️ Error loading products:', error.message);
+    // If there's an error, mark as loaded to prevent infinite retries
+    devProductsLoaded = true;
+  }
   
   return devProducts;
 }

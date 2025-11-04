@@ -85,6 +85,11 @@ export default function Home() {
     }
   }, [filters])
 
+  // Initial search on mount
+  useEffect(() => {
+    searchProducts(true)
+  }, [])
+
   // Auto-search when filters change (debounced for query)
   useEffect(() => {
     // Clear existing timeout
@@ -107,7 +112,7 @@ export default function Home() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [filters, searchProducts])
+  }, [filters])
 
   // Load initial products on mount
   useEffect(() => {
