@@ -150,9 +150,10 @@ export default function Home() {
     )
   }
 
+  // Save filters to localStorage (no dependencies needed - just filters)
   useEffect(() => {
-    // Save filters to localStorage
     localStorage.setItem('searchFilters', JSON.stringify(filters))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
 
   return (
