@@ -149,10 +149,6 @@ function ResetPasswordForm() {
   )
 }
 
-// Disable static generation - this page uses searchParams
-export const dynamic = 'force-dynamic'
-export const dynamicParams = true
-
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
