@@ -18,7 +18,8 @@ export async function GET() {
 
     // Production mode: Query database
     const path = require('path');
-    const { query } = require(path.join(process.cwd(), 'database', 'connection'));
+    const connectionPath = path.join(process.cwd(), 'database', 'connection');
+    const { query } = require(connectionPath);
     const result = await query('SELECT * FROM suppliers WHERE status = $1 ORDER BY name', ['active']);
     return NextResponse.json({ suppliers: result.rows });
   } catch (error) {
