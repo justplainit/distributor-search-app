@@ -2,13 +2,8 @@ import { NextResponse } from 'next/server';
 import speakeasy from 'speakeasy';
 import jwt from 'jsonwebtoken';
 
-// QRCode needs to be imported dynamically
-let QRCode;
-try {
-  QRCode = require('qrcode');
-} catch (e) {
-  // Fallback if QRCode not available
-}
+// QRCode needs to be required (CommonJS) for Node.js compatibility
+const QRCode = require('qrcode');
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
