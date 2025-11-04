@@ -103,10 +103,12 @@ export default function Home() {
     }
   }, [filters])
 
-  // Initial search on mount
+  // Initial search on mount (only after authenticated)
   useEffect(() => {
-    searchProducts(true)
-  }, [])
+    if (isAuthenticated && !checkingAuth) {
+      searchProducts(true)
+    }
+  }, [isAuthenticated])
 
   // Auto-search when filters change (debounced for query)
   useEffect(() => {
