@@ -103,10 +103,12 @@ async function loadDevProducts() {
       console.error('⚠️ Could not load Tarsus products:', error.message);
     }
     
-    console.log(`✅ Total ${devProducts.length} products loaded`);
-  } catch (error) {
-    console.error('⚠️ Error loading products:', error.message);
-  }
+      console.log(`✅ Total ${devProducts.length} products loaded`);
+    } catch (error) {
+      console.error('⚠️ Error loading products:', error.message);
+      // If there's an error, mark as loaded to prevent infinite retries
+      devProductsLoaded = true;
+    }
   
   return devProducts;
 }
@@ -123,9 +125,13 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Dev mode: Search in-memory
+    // Dev mode: Search in-memory (no authentication required)
     if (DEV_MODE) {
-      await loadDevProducts();
+      // Load products if not already loaded
+      if (!devProductsLoaded) {
+        console.log('📦 Loading products from suppliers...');
+        await loadDevProducts();
+      }
       
       let filtered = [...devProducts];
       
