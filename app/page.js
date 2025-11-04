@@ -87,7 +87,7 @@ export default function Home() {
     } finally {
       if (showLoading) setLoading(false)
     }
-  }, [filters])
+  }, [filters, router])
 
   // Initial search on mount (only after authenticated)
   useEffect(() => {
@@ -140,6 +140,12 @@ export default function Home() {
     checkAuth()
   }, [router])
 
+  // Save filters to localStorage
+  useEffect(() => {
+    localStorage.setItem('searchFilters', JSON.stringify(filters))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
+
   // Don't render content until auth is checked
   if (checkingAuth || !isAuthenticated) {
     return (
@@ -151,12 +157,6 @@ export default function Home() {
       </div>
     )
   }
-
-  // Save filters to localStorage (no dependencies needed - just filters)
-  useEffect(() => {
-    localStorage.setItem('searchFilters', JSON.stringify(filters))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters])
 
   return (
     <main className="min-h-screen bg-gray-50">
