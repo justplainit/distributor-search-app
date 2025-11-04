@@ -1,11 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import SearchBar from '@/components/SearchBar'
 import ProductTable from '@/components/ProductTable'
 import Filters from '@/components/Filters'
 
 export default function Home() {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
